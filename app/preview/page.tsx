@@ -4,12 +4,14 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function Preview() {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  useEffect(() => {
+
+
+useEffect(() => {
     const photo = localStorage.getItem('bookPhoto');
+
     if (!photo) {
       router.push('/');
       return;
@@ -25,18 +27,99 @@ export default function Preview() {
         body: JSON.stringify({ image: photo }),
       });
 
-      if (!response.ok) throw new Error('Recognition failed');
+      if (response.status === 429) {
+        const data = await response.json();
+        if (data.reason === 'daily_limit') {
+          setError('daily_limit');
+        } else {
+          setError('rate_limit');
+        }
+        return;
+      }
+
+      if (!response.ok) {
+        setError('not_found');
+        return;
+      }
 
       const data = await response.json();
       localStorage.setItem('bookData', JSON.stringify(data));
       router.push('/card');
     } catch {
-      setError(true);
-      setLoading(false);
+      setError('not_found');
     }
   };
 
-  if (error) {
+  // Экран ошибки — дневной лимит
+  if (error === 'daily_limit') {
+    return (
+      <main style={{
+        minHeight: '100vh',
+        backgroundColor: 'var(--background)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '0 28px',
+      }}>
+        <div style={{
+          width: '72px',
+          height: '72px',
+          backgroundColor: 'var(--coral-bg)',
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: '24px',
+          border: '1.5px solid var(--coral-light)',
+        }}>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" stroke="#E8725A" strokeWidth="1.8"/>
+            <path d="M12 8v4M12 16h.01" stroke="#E8725A" strokeWidth="1.8" strokeLinecap="round"/>
+          </svg>
+        </div>
+        <h1 style={{
+          fontSize: '19px',
+          fontWeight: 600,
+          color: 'var(--graphite-900)',
+          textAlign: 'center',
+          marginBottom: '8px',
+          letterSpacing: '-0.3px',
+        }}>Дневной лимит исчерпан</h1>
+        <p style={{
+          fontSize: '13px',
+          color: 'var(--graphite-600)',
+          textAlign: 'center',
+          marginBottom: '8px',
+          lineHeight: 1.5,
+        }}>Бесплатно можно распознать 20 книг в день. Лимит обновится завтра.</p>
+        <p style={{
+          fontSize: '12px',
+          color: 'var(--coral-primary)',
+          textAlign: 'center',
+          marginBottom: '32px',
+        }}>Скоро появится премиум без ограничений ✨</p>
+        <button
+          onClick={() => router.push('/')}
+          style={{
+            width: '100%',
+            height: '44px',
+            backgroundColor: 'var(--coral-primary)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            fontSize: '13px',
+            fontWeight: 500,
+            cursor: 'pointer',
+          }}>
+          На главную
+        </button>
+      </main>
+    );
+  }
+
+  // Экран ошибки — не распознано
+  if (error === 'not_found' || error === 'rate_limit') {
     return (
       <main style={{
         minHeight: '100vh',
@@ -98,6 +181,7 @@ export default function Preview() {
     );
   }
 
+  // Экран загрузки
   return (
     <main style={{
       minHeight: '100vh',
