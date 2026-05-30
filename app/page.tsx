@@ -1,4 +1,25 @@
+'use client';
+
+import { useRef } from 'react';
+import { useRouter } from 'next/navigation';
+
 export default function Home() {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      localStorage.setItem('bookPhoto', base64);
+      router.push('/preview');
+    };
+    reader.readAsDataURL(file);
+  };
+
   return (
     <main style={{
       minHeight: '100vh',
@@ -73,21 +94,23 @@ export default function Home() {
         }}>
           Убедитесь, что обложка хорошо видна и фото чёткое
         </p>
-        <button style={{
-          width: '100%',
-          height: '44px',
-          backgroundColor: 'var(--coral-primary)',
-          color: 'white',
-          border: 'none',
-          borderRadius: '8px',
-          fontSize: '13px',
-          fontWeight: 500,
-          cursor: 'pointer',
-          marginBottom: '10px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          style={{
+            width: '100%',
+            height: '44px',
+            backgroundColor: 'var(--coral-primary)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            fontSize: '13px',
+            fontWeight: 500,
+            cursor: 'pointer',
+            marginBottom: '10px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
           Сделать фото
         </button>
         <div style={{
@@ -100,23 +123,32 @@ export default function Home() {
           <span style={{ fontSize: '10px', color: 'var(--graphite-300)' }}>или</span>
           <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border)' }} />
         </div>
-        <button style={{
-          width: '100%',
-          height: '44px',
-          backgroundColor: 'transparent',
-          color: 'var(--graphite-900)',
-          border: '1.5px solid var(--border)',
-          borderRadius: '8px',
-          fontSize: '13px',
-          fontWeight: 400,
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          style={{
+            width: '100%',
+            height: '44px',
+            backgroundColor: 'transparent',
+            color: 'var(--graphite-900)',
+            border: '1.5px solid var(--border)',
+            borderRadius: '8px',
+            fontSize: '13px',
+            fontWeight: 400,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
           Выбрать из галереи
         </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={handleFileSelect}
+        />
       </div>
     </main>
-  )
+  );
 }
